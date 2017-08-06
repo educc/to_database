@@ -1,3 +1,6 @@
+
+connectstring.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -137,5 +140,3 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
-
-connectstring.txt

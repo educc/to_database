@@ -23,6 +23,7 @@ def create_exam(mycourse):
         examApprovalTerm=100,
         examApprovalType="FIX.PERC",
         examStatusTypeId="ACTIVO",
+        questions=0,
         duration=30,
         createdBy="todb.py",
         createdDate=datetime.utcnow(),
@@ -53,7 +54,7 @@ def create_examquestion(myexam, myquestion):
 
 def create_question(mytopic, question_data):
     feedback = None
-    if feedback in question_data:
+    if 'feedback' in question_data:
         feedback = question_data['feedback']
     return Question(
             topic = mytopic,
@@ -61,7 +62,7 @@ def create_question(mytopic, question_data):
             questionLevelTypeId = "BASICO",
             questionTypeId = None,
             descriptionAnswer = feedback ,
-            questionCorrectAnswer = question_data['correct'],
+            questionCorrectAnswer = question_data['correct'].strip(),
             createdBy="todb.py",
             createdDate=datetime.utcnow(),
             deleted=0,
@@ -105,17 +106,19 @@ def import_data(data):
         exam = create_exam(course)
         topic = create_topic(course)
 
+        nquestions = 0
         for question_obj in data:
+            nquestions += 1
             question = create_question(topic,question_obj)
 
-            if question.questionCorrectAnswer.count(',') > 1:
+            if question.questionCorrectAnswer.count(',') > 0:
                 question.questionTypeId = "OPC.MULT"
             else:
                 question.questionTypeId = "OPC.UNICA"
             examquestion = create_examquestion(exam, question) 
 
             create_question_options(question, question_obj['options'])
-
+        exam.questions = nquestions
         session.add(course)
         session.commit()
     except Exception as ex:
