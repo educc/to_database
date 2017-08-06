@@ -1,0 +1,1 @@
+mysql+mysqldb://root:root@localhost/cldb?charset=utf8
