@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from database import engine, Course, Topic, Exam, Question, QuestionDetail, ExamQuestion
 import base64
+import codecs
 
 def create_course(data):
     return Course(
@@ -21,14 +22,14 @@ def create_course(data):
 def create_exam(mycourse,data):
     return Exam(
         course = mycourse,
-        name=data['exam_name'],
-        examCode=data['exam_code'],
+        name=data['name'],
+        examCode=data['code'],
         description="created by todb.py",
         examApprovalTerm=100,
         examApprovalType="FIX.PERC",
         examStatusTypeId="ACTIVE",
         questions=0,
-        duration=30,
+        duration=data['duration'],
         createdBy="todb.py",
         createdDate=datetime.utcnow(),
         deleted=0,
@@ -99,28 +100,37 @@ def get_question_desc(questionstr:str):
 def import_data(data):
     """  require a specific json format, see example.json """
     session = Session(engine)
+    nexam = 1
+    nquestions = 0
 
     try:
         course = create_course(data)
-        exam = create_exam(course, data)
         topic = create_topic(course)
 
-        nquestions = 0
-        for question_obj in data['questions']:
-            nquestions += 1
-            question = create_question(topic,question_obj)
+        for exam_obj in data['exams']:
+            exam = create_exam(course, exam_obj)
 
-            if question.questionCorrectAnswer.count(',') > 0:
-                question.questionTypeId = "OPC.MULT"
-            else:
-                question.questionTypeId = "OPC.UNICA"
-            examquestion = create_examquestion(exam, question) 
+            nquestions = 0
+            for question_obj in exam_obj['questions']:
+                nquestions += 1
+                question = create_question(topic,question_obj)
 
-            create_question_options(question, question_obj['options'])
-        exam.questions = nquestions
+                if question.questionCorrectAnswer.count(',') > 0:
+                    question.questionTypeId = "OPC.MULT"
+                else:
+                    question.questionTypeId = "OPC.UNICA"
+                examquestion = create_examquestion(exam, question) 
+
+                create_question_options(question, question_obj['options'])
+            #end
+            exam.questions = nquestions
+            nexam += 1
+        #end-for
+
         session.add(course)
         session.commit()
     except Exception as ex:
+        print(f"Error on exam {nexam} and question {nquestions} ")
         print(ex)
         session.rollback()
 
@@ -131,7 +141,7 @@ def main():
         print("todb.py filename_data.json")
     else:
         data = None
-        with open(sys.argv[1]) as myfile:
+        with codecs.open(sys.argv[1],"r","UTF-8") as myfile:
             data = json.loads(myfile.read())
         import_data(data)
 
